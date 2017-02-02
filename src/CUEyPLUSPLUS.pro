@@ -8,9 +8,19 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = CUEyPLUSPLUS
+TARGET = CUEy
 TEMPLATE = app
 win32:RC_ICONS += icon.ico
+`
+VERSION_MAJOR = 1
+VERSION_MINOR = 0
+VERSION_BUILD = 0
+
+DEFINES += "VERSION_MAJOR=$$VERSION_MAJOR"\
+       "VERSION_MINOR=$$VERSION_MINOR"\
+       "VERSION_BUILD=$$VERSION_BUILD"
+
+VERSION = $${VERSION_MAJOR}.$${VERSION_MINOR}.$${VERSION_BUILD}
 
 # The following define mak  es your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -36,3 +46,4 @@ FORMS    += mainwindow.ui \
 DISTFILES += \
     extras \
     ../../flac.exe
+

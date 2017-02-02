@@ -1,2 +1,2 @@
 # CUEy
-CUE Splitter wirtten in C++
+CUE Splitter written in C++

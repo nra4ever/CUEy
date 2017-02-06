@@ -62,6 +62,7 @@ void MainWindow::dropEvent(QDropEvent *e)
         QString ifile;
         QList<QUrl> urlList = mimeData->urls();
         if (urlList.size() == 1) {
+            rA(0);
             ifile = urlList.at(0).toLocalFile();
             MainWindow::cue = ifile;
             MainWindow::fImport();
@@ -157,12 +158,11 @@ void MainWindow::fImport() {
             QString file = dir + "/" + fIt.peekNext().value("file");
             if(!QFileInfo(file).exists()) {
                 ui->statusbar->showMessage("ERROR: Input file(s) does not exist.");
-                    rA(1);
-                    return;
+                rA(1);
+                return;
             }else {
-                QStandardItem *q = new QStandardItem(fIt.peekNext().value("file"));
+                QStandardItem *q = new QStandardItem(fIt.next().value("file"));
                 MainWindow::model->appendRow(q);
-                fIt.next();
             }
         }else {
             ui->statusbar->showMessage("ERROR: Input file(s) not in FLAC format.");
@@ -214,88 +214,75 @@ void MainWindow::split() {
     tIt.next();
     while (tIt.hasNext()) {
         QStringList start, end;
-        QString tn, namestr, amestr, side, ifile;
-    if (MainWindow::dual == 2) {
-            if (MainWindow::Files.size() == 2) {
-                if (last) {
-                    side = "B";
-                }else if (tIt.peekPrevious().value("lind").toInt() < MainWindow::Files[1].value("lind").toInt()) {
-                    side = "A";
-                    if (last) {
-                        tn = tIt.peekNext().value("num");
+        QString tn, namestr, amestr, side, ifile, cmd;
+        QMap<QString,QString> it;
+        ifile = MainWindow::Files[0].value("file");
+        if (last == true) {
+            it = tIt.peekNext();
+        }else {
+            it = tIt.peekPrevious();
+        }if (MainWindow::dual == 2) {
+                if (MainWindow::Files.size() == 2) {
+                    if (last == true) {
+                        side = "B";
                     }else {
                         tn = tIt.peekPrevious().value("num");
+                    }if (tIt.peekPrevious().value("lind").toInt() < MainWindow::Files[1].value("lind").toInt()) {
+                        side = "A";
+                    }else {
+                        side = "B";
+                    }if (side.contains("B")) {
+                        ifile = MainWindow::Files[1].value("file");
+                        bcount++;
+                        QVariant bc(bcount);
+                        QString bcs = bc.toString();
+                        tn = bcs;
                     }
                 }else {
-                    side = "B";
-                }if (side.contains("B")) {
-                    ifile = MainWindow::Files[1].value("file");
-                    bcount++;
-                    QVariant bc(bcount);
-                    QString bcs = bc.toString();
-                    tn = bcs;
+                    ui->statusbar->showMessage("ERROR: CUEs with over 2 input files not currently supported.");
+                    return;
+                }if (first){
+                    end = tIt.peekNext().value("tind").split(":");
+                }else if (last == true) {
+                   start = tIt.peekNext().value("tind").split(":");
                 }else {
-                    ifile = MainWindow::Files[0].value("file");
+                    if (tIt.peekNext().value("tind").contains("00:00:00")) {
+                        start = tIt.peekPrevious().value("tind").split(":");
+                    }else if (tIt.peekPrevious().value("tind").contains("00:00:00")) {
+                        end = tIt.peekNext().value("tind").split(":");
+                    }else {
+                        start = tIt.peekPrevious().value("tind").split(":");
+                        end = tIt.peekNext().value("tind").split(":");
                 }
-            }else {
-                ui->statusbar->showMessage("ERROR: CUEs with over 2 input files not currently supported.");
-                return;
-            }if (first){
-                end = tIt.peekNext().value("tind").split(":");
-                amestr = side + tn + " - " + tIt.peekPrevious().value("title") + ".flac";
-            }else if (last == true){
-               start = tIt.peekNext().value("tind").split(":");
-               amestr = side + tn + " - " + tIt.peekNext().value("title") + ".flac";
-            }else {
-                amestr = side + tn + " - " + tIt.peekPrevious().value("title") + ".flac";
-                start = tIt.peekPrevious().value("tind").split(":");
-                end = tIt.peekNext().value("tind").split(":");
-            }
+            }amestr = side + tn + " - " + it.value("title") + ".flac";
+
         }else {
             if (first){
                 end = tIt.peekNext().value("tind").split(":");
-                amestr = "01 - " + tIt.peekPrevious().value("title") + ".flac";
-            }else if (last == true){
+            }else if (last == true) {
                start = tIt.peekNext().value("tind").split(":");
-               if(tIt.peekNext().value("num").length() == 1) {
-                   tn = "0" + tIt.peekNext().value("num");
-               }else {
-                   tn = tIt.peekNext().value("num");
-               }amestr = tn + " - " + tIt.peekNext().value("title") + ".flac";
             }else {
-                if(tIt.peekPrevious().value("num").length() == 1) {
-                    tn = "0" + tIt.peekPrevious().value("num");
-                }else {
-                    tn = tIt.peekPrevious().value("num");
-                }amestr = tn + " - " + tIt.peekPrevious().value("title") + ".flac";
                 start = tIt.peekPrevious().value("tind").split(":");
                 end = tIt.peekNext().value("tind").split(":");
-            }
+            }if(it.value("num").length() == 1) {
+                tn = "0" + it.value("num");
+            }else {
+                tn = it.value("num");
+            }amestr = tn + " - " + it.value("title") + ".flac";
         }namestr = validateNamestr(amestr);
         QString c = "flac.exe --best ";
-        if (last) {
-            if (tIt.peekNext().contains("artist"))  {
-                c = c + "-T \"ARTIST= " + tIt.peekNext().value("artist") + "\" ";
-            }if (tIt.peekNext().contains("year"))  {
-                c = c + "-T \"DATE= " + tIt.peekNext().value("year") + "\" ";
-            }if (tIt.peekNext().contains("genre"))  {
-                c = c + "-T \"GENRE= " + tIt.peekNext().value("genre") + "\" ";
-            }
+        if (it.contains("artist"))  {
+            c = c + "-T \"ARTIST= " + it.value("artist") + "\" ";
+        }if (it.contains("year"))  {
+            c = c + "-T \"DATE= " + it.value("year") + "\" ";
+        }if (it.contains("genre"))  {
+            c = c + "-T \"GENRE= " + it.value("genre") + "\" ";
+        }if (start.isEmpty()) {
+            cmd = c + "-T \"TRACKNUMBER=" + tIt.peekPrevious().value("num")  + "\" -T \"ALBUM=" + MainWindow::al + "\" " + "-T \"TITLE=" + tIt.peekPrevious().value("title")  + "\" " + "--until=" + end[0] + ":" + end[1] + "." + end[2] + " \"" + wdir + "/" + ifile + "\" -o \"" + wdir + "/" + namestr + "\"";
+        }else if (end.isEmpty()) {
+            cmd = c + "-T \"TRACKNUMBER=" + it.value("num")  + "\" -T \"ALBUM=" + MainWindow::al + "\" " + "-T \"TITLE=" + it.value("title")  + "\" " + "--skip=" + start[0] + ":" + start[1] + "." + start[2] + " \"" + wdir + "/" + ifile + "\" -o \"" + wdir + "/" + namestr + "\"";
         }else {
-            if (tIt.peekPrevious().contains("artist"))  {
-                c = c + "-T \"ARTIST=" + tIt.peekPrevious().value("artist") + "\" ";
-            }if (tIt.peekPrevious().contains("year"))  {
-                c = c + "-T \"DATE=" + tIt.peekPrevious().value("year") + "\" ";
-            }if (tIt.peekPrevious().contains("genre"))  {
-                c = c + "-T \"GENRE=" + tIt.peekPrevious().value("genre") + "\" ";
-            }
-        }QString cmd;
-        if (start.isEmpty()) {
-            cmd = c + "-T \"TRACKNUMBER=" + tIt.peekPrevious().value("num")  + "\" -T \"ALBUM=" + MainWindow::al + "\" " + "-T \"TITLE=" + tIt.peekPrevious().value("title")  + "\" " + "--until=" + end[0] + ":" + end[1] + "." + end[2] + " \"" + wdir + "/" + MainWindow::Files[0].value("file") + "\" -o \"" + wdir + "/" + namestr + "\"";
-        }else if (last) {
-            cmd = c + "-T \"TRACKNUMBER=" + tIt.peekNext().value("num")  + "\" -T \"ALBUM=" + MainWindow::al + "\" " + "-T \"TITLE=" + tIt.peekNext().value("title")  + "\" " + "--skip=" + start[0] + ":" + start[1] + "." + start[2] + " \"" + wdir + "/" + MainWindow::Files[0].value("file") + "\" -o \"" + wdir + "/" + namestr + "\"";
-        }else {
-            cmd = c + "-T \"TRACKNUMBER=" + tIt.peekPrevious().value("num")  + "\" -T \"ALBUM=" + MainWindow::al + "\" " + "-T \"TITLE=" + tIt.peekPrevious().value("title")  + "\" " + "--skip=" + start[0] + ":" + start[1] + "." + start[2] + " --until=" + end[0] + ":" + end[1] + "." + end[2] + " \"" + wdir + "/" + MainWindow::Files[0].value("file") + "\" -o \"" + wdir + "/" + namestr + "\"";
+            cmd = c + "-T \"TRACKNUMBER=" + tIt.peekPrevious().value("num")  + "\" -T \"ALBUM=" + MainWindow::al + "\" " + "-T \"TITLE=" + tIt.peekPrevious().value("title")  + "\" " + "--skip=" + start[0] + ":" + start[1] + "." + start[2] + " --until=" + end[0] + ":" + end[1] + "." + end[2] + " \"" + wdir + "/" + ifile + "\" -o \"" + wdir + "/" + namestr + "\"";
         }MainWindow::cmds.append(cmd);
         first = false;
         tIt.next();

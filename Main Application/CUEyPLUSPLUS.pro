@@ -12,9 +12,11 @@ TARGET = CUEy
 TEMPLATE = app
 win32:RC_ICONS += icon.ico
 `
-VERSION_MAJOR = 1
+VERSION_MAJOR = 2
 VERSION_MINOR = 0
-VERSION_BUILD = 2
+VERSION_BUILD = 0
+
+
 
 DEFINES += "VERSION_MAJOR=$$VERSION_MAJOR"\
        "VERSION_MINOR=$$VERSION_MINOR"\
@@ -41,7 +43,8 @@ HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui \
     dialog.ui \
-    errdia.ui
+    errdia.ui \
+    jobwindow.ui
 
 DISTFILES += \
     extras \

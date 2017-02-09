@@ -22,8 +22,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->impBu, SIGNAL (released()), this, SLOT (iBut()));
     connect(ui->clearBu, SIGNAL (released()), this, SLOT (cBut()));
     connect(ui->goBu, SIGNAL (released()), this, SLOT (split()));
-    connect(ui->cdRad, SIGNAL (released()), this, SLOT (siMode()));
-    connect(ui->vinylRad, SIGNAL (released()), this, SLOT (duoMode()));
+    connect(ui->actionExit, SIGNAL (triggered()), this, SLOT (ex()));
+    connect(ui->actionBatch, SIGNAL (triggered()), this, SLOT (batch()));
+    connect(ui->actionImport, SIGNAL (triggered()), this, SLOT (iBut()));
     model = new QStandardItemModel;
     ui->inView->setModel(model);
     model2 = new QStandardItemModel;
@@ -39,6 +40,14 @@ MainWindow::MainWindow(QWidget *parent) :
         MainWindow::cue = QApplication::arguments().at(1);
         fImport();
     }
+}
+
+void MainWindow::batch() {
+    ui->cmdout->append("batch select");
+}
+
+void MainWindow::ex() {
+    QApplication::quit();
 }
 
 void MainWindow::dtTrigger(int d , QProcess::ExitStatus) {
@@ -75,6 +84,10 @@ void MainWindow::dropEvent(QDropEvent *e)
 void MainWindow::iBut() {
     QString filter = "CUE Files (*.cue)";
     MainWindow::cue = QFileDialog::getOpenFileName(this, "Select a file...", QDir::homePath(), filter);
+    if(MainWindow::cue.isEmpty()) {
+        ui->statusbar->showMessage("ERROR: No File Specified.");
+        return;
+    }
     MainWindow::fImport();
 }
 
@@ -84,6 +97,7 @@ void MainWindow::cBut() {
 
 
 void MainWindow::fImport() {
+    ui->cmdout->append(MainWindow::cue);
     QString tind;
     bool first = true;
     int trackCount = 0;
@@ -110,8 +124,9 @@ void MainWindow::fImport() {
             MainWindow::year = sr.right(4);
         }else if(sr.contains("REM GENRE", Qt::CaseSensitive)) {
             MainWindow::genre = sr.mid(10);
+            MainWindow::genre.remove("\"");
          }else if(sr.contains("FILE", Qt::CaseSensitive)) {
-            QString fs = sr.mid(6);
+            QString fs = str.mid(6);
             fs.chop(6);
             QVariant lcf(linecount);
             QString flc = lcf.toString();
@@ -179,7 +194,7 @@ void MainWindow::fImport() {
     ui->cueLab->setText("Current CUE File: " + MainWindow::cue);
     QVariant fc(MainWindow::Files.size());
     QString fcs = fc.toString();
-    ui->statusbar->showMessage("Successfully Imported CUE File (" + tIt.peekPrevious().value("num") + " Tracks Across " + fcs + " Files).");
+//    ui->statusbar->showMessage("Successfully Imported CUE File (" + tIt.peekPrevious().value("num") + " Tracks Across " + fcs + " Files).");
 }
 
 void MainWindow::rA(int e) {
@@ -198,12 +213,17 @@ void MainWindow::rA(int e) {
 }
 
 void MainWindow::split() {
+    if (MainWindow::Files.size() == 1) {
+        MainWindow::dual = 1;
+    }else {
+        MainWindow::dual = 2;
+    }
     if (MainWindow::cue.isEmpty() || MainWindow::Tracks.isEmpty()|| MainWindow::Files.isEmpty()) {
         ui->statusbar->showMessage("ERROR: Nothing to split.");
         return;
     }
     if (MainWindow::dual == 0) {
-            ui->statusbar->showMessage("ERROR: Please Select a Format.");
+            ui->statusbar->showMessage("ERROR: Invalid Format.");
             return;
     }bool first = true;
     bool last = false;
@@ -309,16 +329,7 @@ QString MainWindow::validateNamestr(QString str) {
     }return str;
 }
 
-void MainWindow::siMode() {
-    MainWindow::dual = 1;
-}
-
-void MainWindow::duoMode() {
-    MainWindow::dual = 2;
-}
-
 void MainWindow::doTrack(int ex) {
-
     if (MainWindow::cmds.size() != MainWindow::Tracks.size()) {
         if (MainWindow::count != 0) {
             if (ex == 1) {

@@ -37,7 +37,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    QString MainWindow::cue, MainWindow::pa, MainWindow::tra, MainWindow::genre, MainWindow::year, MainWindow::tc, MainWindow::al;
+    QString MainWindow::cue, MainWindow::pa, MainWindow::tra, MainWindow::genre, MainWindow::year, MainWindow::tc, MainWindow::al, MainWindow::bDir;
     QStandardItemModel *MainWindow::model;
     QStandardItemModel *MainWindow::model2;
     QProcess *MainWindow::process;
@@ -56,13 +56,13 @@ private:
     Ui::MainWindow *ui;
 
 private slots:
+    void ex();
+    void batch();
     void fImport();
     void rA(int);
     void split();
-    void siMode();
     void iBut();
     void cBut();
-    void duoMode();
     QString validateNamestr(QString);
     void doTrack(int);
     void dtTrigger(int , QProcess::ExitStatus);
